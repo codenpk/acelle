@@ -1,0 +1,81 @@
+version: '2'
+services:
+  https-portal:
+    container_name: https-portal
+    image: steveltn/https-portal:latest
+    ports:
+      - '80:80'
+      - '443:443'
+    restart: always
+    environment:
+      STAGE: 'production'
+      NUMBITS: '4096'
+#        FORCE_RENEW: 'true'
+      WORKER_PROCESSES: '4'
+      WORKER_CONNECTIONS: '1024'
+      KEEPALIVE_TIMEOUT: '65'
+      GZIP: 'on'
+      SERVER_NAMES_HASH_BUCKET_SIZE: '64'
+      PROXY_CONNECT_TIMEOUT: '900'
+      PROXY_SEND_TIMEOUT: '900'
+      PROXY_READ_TIMEOUT: '900'
+      CLIENT_MAX_BODY_SIZE: 30M
+      DOMAINS: >-
+          mailtrain.directmailling.com -> http://172.20.128.5,
+          sbox.directmailling.com -> http://172.20.128.5,
+          lists.directmailling.com -> http://172.20.128.5,
+          directmailling.com -> http://172.20.128.5
+    volumes:
+      - ./conf.d:/etc/nginx/conf.d/:rw
+      - ./ssl_certs:/var/lib/https-portal:rw
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      static-network:
+        ipv4_address: 172.20.128.2
+
+  db:
+    container_name: mysql57
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: zSS8f7N9t
+      MYSQL_DATABASE: mumara
+      MYSQL_USER: klayen
+      MYSQL_PASSWORD: bD92Hk4Hp
+    ports:
+      - "9906:3306"
+    networks:
+      static-network:
+        ipv4_address: 172.20.128.3
+
+  adminer:
+    image: javanile/adminer
+    environment:
+      - MYSQL_ROOT_PASSWORD=zSS8f7N9t
+    ports:
+      - 8080:8080
+    links:
+      - db:db
+    networks:
+      static-network:
+        ipv4_address: 172.20.128.4
+
+  site-1:
+    image: webdevops/php-apache
+    restart: always
+    links:
+      - db:db
+    container_name: site-1-container
+    volumes:
+          - ./wwwacelle:/var/www/html
+          - /etc/localtime:/etc/localtime:ro
+    networks:
+      static-network:
+        ipv4_address: 172.20.128.5
+
+networks:
+  static-network:
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          #docker-compose v3+ do not use ip_range
+          ip_range: 172.28.5.0/24
