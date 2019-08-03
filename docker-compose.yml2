@@ -57,7 +57,7 @@ services:
         ipv4_address: 172.20.128.4
 
   site-1:
-    image: atsu666/ioncube:7.0
+    image: klayen/atsu666-ioncube:7.0
     restart: always
     links:
       - db:db
